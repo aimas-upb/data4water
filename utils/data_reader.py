@@ -20,3 +20,25 @@ def read_dataset():
         df_list.append(df)
 
     return df_list
+
+def get_extended_timeseries(df):
+    """
+    Get the concatenated 'all-time' timeseries for a consumer.
+    :param df: The dataframe containing the data for that consumer
+    :return: A pandas Timeseries object containing the concatenated timeseries
+    """
+    hours = range(24)
+    hour_cols = map(lambda x : "h" + str(x), hours)
+
+    names = []
+    values = []
+    for index, row in df.iterrows():
+        names = names + map(lambda x: str(row['date']) + " " + str(x) + ":00:00Z", hours)
+        values = values + [row[col] for col in hour_cols]
+
+    # print(names)
+    # print(values)
+    # print(len(values))
+
+    big_series = pd.Series(values, index = names)
+    return big_series
