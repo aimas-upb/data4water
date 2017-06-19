@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from scipy.sparse import csr_matrix
 import numpy as np
 import matplotlib.pyplot as plt
+import statsmodels.api as sm
+import pandas as pd
 
 # ids for file
 file2id  = {}
@@ -20,11 +22,59 @@ def printDictionary(dictionary):
     for key, value in dictionary.items():
         print(key, value)
 
+def plotTSA(res):
+    plt.figure(1)
+
+    plt.subplot(411)
+    plt.ylabel('Observed')
+    # plt.xlabel('DATE & HOUR')
+    plt.plot(res.observed)
+
+    plt.subplot(412)
+    plt.ylabel('Seasonal')
+    # plt.xlabel('DATE & HOUR')
+    plt.plot(res.seasonal)
+
+    plt.subplot(413)
+    plt.ylabel('Trend')
+    # plt.xlabel('DATE & HOUR')
+    plt.plot(res.trend)
+
+    plt.subplot(414)
+    plt.ylabel('Residual')
+    plt.xlabel('DATE & HOUR')
+    plt.plot(res.resid)
+    plt.show()
+
+def tsa(mat, customers=[]):
+    if customers:
+        for customer in customers:
+            # df = pd.DataFrame(data=mat[customer], index= dates2id.keys())
+            df = pd.DataFrame(data=mat[customer], index=pd.date_range(start=id2dates[0], periods=len(id2dates), freq='H'))
+
+            res = sm.tsa.seasonal_decompose(df)
+            # don't know why the plots close???
+            # resplot = res.plot()
+            # resplot.show()
+            plotTSA(res)
+            
+            
+    else:
+        for line in mat:
+            # df = pd.DataFrame(data=line, index= dates2id.keys())
+            df = pd.DataFrame(data=line, index=pd.date_range(start=id2dates[0], periods=len(id2dates), freq='H'))
+            res = sm.tsa.seasonal_decompose(df)
+            # don't know why the plots close???
+            # resplot = res.plot()
+            # resplot.show()
+            plotTSA(res)
+            
+
 # plots the data
 # params:
 #   a matrix with n customers
 #   customers -  a list with customers ids to plot, if empty plots all
-def simple_plot(mat, customers = []):
+def simplePlot(mat, xlabel="", ylabel="", customers = []):
     plt.figure()
     if customers:
         for customer in customers:
@@ -32,8 +82,8 @@ def simple_plot(mat, customers = []):
     else:
         for line in mat:
             plt.plot(line)
-    plt.ylabel('Consumption')
-    plt.xlabel('DATE & HOURS')
+    plt.ylabel(ylabel)
+    plt.xlabel(xlabel)
     plt.show()
 
 
@@ -44,7 +94,7 @@ def simple_plot(mat, customers = []):
 def createIDDate(startDate, endDate):
     idx_date = 0
     dt = startDate
-    while dt <= endDate:
+    while dt < endDate:
         dates2id[dt] = idx_date
         id2dates[idx_date] = dt
         dt = dt + timedelta(hours=1)
@@ -97,11 +147,13 @@ if __name__ == "__main__":
 
     createIDDate(startDate, endDate)
     # if you need the date ids
-    printDictionary(id2dates)
+    # printDictionary(id2dates)
 
     csrmat = readData(dirpath)
 
     # if you need the file ids
-    printDictionary(id2file)
+    # printDictionary(id2file)
 
-    simple_plot(csrmat.toarray(), [1, 2, 10, 20])
+    simplePlot(csrmat.toarray(), xlabel='DATE & HOUR', ylabel='Consumption', customers=[1, 2, 10, 20])
+
+    tsa(csrmat.toarray(), [1, 2, 10, 20])
